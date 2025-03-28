@@ -5,20 +5,28 @@ from tkinter import messagebox
 from PIL import Image, ImageTk, ImageEnhance
 from io import BytesIO
 
+import customtkinter as ctk
+ctk.set_appearance_mode("light")  # Giao diện sáng
+ctk.set_default_color_theme("blue")  # Chủ đề màu
+
 # Số tài khoản mặc định
 ACCOUNT_NUMBER = "19745371"
 update_id = None  # Biến lưu trạng thái cập nhật
 
-
-# Hàm tạo QR Code từ VietQR
+# Hàm tạo QR Code từ VietQR sau khi kiểm tra
 def generate_qr():
     amount = entry_amount.get()
     content = entry_content.get()
 
     if not amount or not content:
-        return  # Không tạo QR nếu chưa nhập đủ
+        messagebox.showwarning("Thông báo", "Vui lòng nhập đầy đủ Số tiền và Tên tài khoản!")
+        return
 
-    # URL QRCode VietQR
+    # Hộp thoại xác nhận CHỈ xuất hiện khi nhấn nút "Tạo QR"
+    confirm = messagebox.askyesno("Xác nhận", f"Xác nhận tạo QR với thông tin sau:\n\n- Tài khoản: {content}\n- Số tiền: {amount}đ\n\nTiếp tục?")
+    if not confirm:
+        return
+
     qr_url = f"https://img.vietqr.io/image/ACB-{ACCOUNT_NUMBER}-qr_only.png?amount={amount}&addInfo={content}"
 
     try:
@@ -34,68 +42,102 @@ def generate_qr():
     except Exception as e:
         messagebox.showerror("Lỗi", f"Lỗi khi tải QR: {str(e)}")
 
-
-# Hàm xử lý khi nhập dữ liệu (delay 0.5s trước khi tạo QR)
-def on_entry_change(event=None):
-    global update_id
-    if update_id:
-        root.after_cancel(update_id)  # Hủy cập nhật trước đó nếu có
-    update_id = root.after(500, generate_qr)  # Đặt lịch cập nhật sau 0.5s
-
+# Hàm thay đổi số tiền khi nhấn nút
+def set_amount(value):
+    """Thay thế số tiền khi nhấn nút"""
+    entry_amount.delete(0, tk.END)
+    entry_amount.insert(0, str(value))
 
 # Hàm tạo QR Code mặc định (làm mờ)
 def generate_default_qr():
-    qr = qrcode.make("QR Mặc Định")
-    qr = qr.resize((250, 250), Image.Resampling.LANCZOS)
-
-    # Chuyển sang ảnh RGB để tránh lỗi
-    qr = qr.convert("RGB")
-
-    # Làm mờ ảnh QR
-    enhancer = ImageEnhance.Brightness(qr)
-    qr_blurred = enhancer.enhance(1.7)  # Tăng độ sáng để làm mờ
-
-    # Chuyển ảnh về dạng hiển thị trên Tkinter
-    qr_blurred = ImageTk.PhotoImage(qr_blurred)
-
-    qr_label.config(image=qr_blurred)
-    qr_label.image = qr_blurred
-
+    try:
+        img = Image.open("D:\CODE\VSCode\AutoBank\CAGBank\img\ICON-CAGPRO.png")  # Ảnh mặc định
+        img = img.resize((250, 250), Image.Resampling.LANCZOS)
+        img = ImageTk.PhotoImage(img)
+        qr_label.config(image=img)
+        qr_label.image = img
+    except Exception as e:
+        print(f"Lỗi tải ảnh mặc định: {e}")
 
 # Tạo giao diện Tkinter
 root = tk.Tk()
-root.title("QR Code Chuyển Khoản ACB")
+root.title("QR Code Chuyển Khoản")
+root.configure(bg="lightblue")
 
-# Khung chính để bố trí ngang
-frame_main = tk.Frame(root)
+frame_main = tk.Frame(root, bg="lightblue")
 frame_main.pack(padx=20, pady=20)
 
-# Khung bên trái (QR Code)
-frame_left = tk.Frame(frame_main)
-frame_left.pack(side=tk.LEFT, padx=10)
+# Khung chứa QR code (bo góc)
+frame_left = tk.Frame(frame_main, bg="white", padx=10, pady=10)
+frame_left.pack(pady=10)
 
-qr_label = tk.Label(frame_left)
-qr_label.pack()
+qr_label = tk.Label(frame_main, bg="white")
+qr_label.pack(pady=10)
 
-# Khung bên phải (Thông tin nhập)
-frame_right = tk.Frame(frame_main)
-frame_right.pack(side=tk.RIGHT, padx=20, pady=10)
+# Hàm kiểm tra nhập số
+def validate_number(P):
+    """Chỉ cho phép nhập số và không cho số 0 đứng đầu."""
+    if P.isdigit():
+        return not (P.startswith("0") and len(P) > 0)  # Không cho nhập nếu số đầu tiên là 0
+    return P == ""  
 
-tk.Label(frame_right, text="Số tài khoản:", font=("Arial", 12, "bold")).pack()
-tk.Label(frame_right, text=ACCOUNT_NUMBER, font=("Arial", 12), fg="blue").pack()
+def validate_account(P):
+    return P.isalnum() and (P.islower() or P.isdigit()) or P == ""   # Chỉ nhận chữ cái và số, hoặc cho phép ô trống
+vcmd_account = root.register(validate_account)
 
-tk.Label(frame_right, text="Số tiền:", font=("Arial", 12)).pack()
-entry_amount = tk.Entry(frame_right, width=25, font=("Arial", 12))
-entry_amount.pack(pady=5)
-entry_amount.bind("<KeyRelease>", on_entry_change)  # Gọi khi nhập
+# Form nhập tên tài khoản nạp tiền
+tk.Label(frame_main, text="Tài khoản nạp", font=("Arial", 12, "bold"), bg="lightblue").pack()
+entry_content = tk.Entry(frame_main, width=20, font=("Arial", 12),validate="key", validatecommand=(vcmd_account, "%P"))
+entry_content.pack(pady=5, ipadx=5)
 
-tk.Label(frame_right, text="Nội dung:", font=("Arial", 12)).pack()
-entry_content = tk.Entry(frame_right, width=25, font=("Arial", 12))
-entry_content.pack(pady=5)
-entry_content.bind("<KeyRelease>", on_entry_change)  # Gọi khi nhập
+# Form nhập số tiền
+tk.Label(frame_main, text="Số tiền", font=("Arial", 12, "bold"), bg="lightblue").pack()
+
+vcmd = root.register(validate_number)
+
+entry_amount = tk.Entry(frame_main, width=20, font=("Arial", 12), validate="key", validatecommand=(vcmd, "%P"))
+entry_amount.pack(pady=5, ipadx=5)
+
+# Nút tạo QR
+btn_generate = ctk.CTkButton(
+    frame_main, text="Tạo QR", width=100, height=40,
+    fg_color="#007BFF", text_color="white",
+    corner_radius=15, command=generate_qr
+)
+btn_generate.pack(pady=10)
+
+# Tạo khung chứa các nút chọn mệnh giá
+frame_buttons = ctk.CTkFrame(frame_main, fg_color="lightblue")
+frame_buttons.pack(pady=10)
+
+tk.Label(frame_buttons, text="Chọn số tiền", font=("Arial", 12, "bold"), bg="lightblue").grid(row=0, column=0, columnspan=3)
+
+# Danh sách các mệnh giá (thêm 2 ô trống cuối cùng)
+amounts = [10000, 20000, 50000, 100000, 200000, 500000]
+
+# Tạo nút bấm với bo góc
+for idx, amt in enumerate(amounts):
+    row, col = divmod(idx, 3)  # Tính vị trí hàng và cột
+    if amt:  # Nếu có giá trị, tạo nút số tiền
+        btn = ctk.CTkButton(
+            frame_buttons, text=f"{amt:,}đ", width=90, height=40,
+            fg_color="#4CAF50", text_color="white",
+            corner_radius=15, command=lambda a=amt: set_amount(a)
+        )
+    else:  # Nếu là chỗ trống, tạo nút ẩn
+        btn = ctk.CTkLabel(frame_buttons, text="", width=90, height=40, fg_color="lightblue")
+
+    btn.grid(row=row + 1, column=col, padx=5, pady=5)  # Cộng 1 vì hàng đầu tiên là tiêu đề
+
+# Nhãn phiên bản
+version_label = tk.Label(root, text="Phiên bản: 1.0.0.0", font=("Arial", 10), bg="lightblue", fg="black")
+version_label.place(relx=0.01, rely=0.98, anchor="sw") 
 
 # Tạo QR mặc định khi mở ứng dụng
 generate_default_qr()
+
+root.resizable(False, False)
+root.configure(bg="lightblue")  # Đổi màu nền toàn bộ
 
 # Chạy ứng dụng
 root.mainloop()
