@@ -11,7 +11,7 @@ import customtkinter as ctk  # Đảm bảo import đúng thư viện
 # Thêm thư mục chứa config.py vào sys.path
 sys.path.append(os.path.abspath("d:\\CODE\\VSCode\\AutoBank"))
 
-import config  # Import file cấu hình
+import CAGBank.config as config  # Import file cấu hình
 ctk.set_appearance_mode("light")  # Giao diện sáng
 ctk.set_default_color_theme("blue")  # Chủ đề màu
 

@@ -7,7 +7,7 @@ import subprocess
 # Thêm thư mục chứa config.py vào sys.path
 sys.path.append(os.path.abspath("d:\\CODE\\VSCode\\AutoBank"))
 
-import config  # Import file cấu hình
+import CAGBank.config as config  # Import file cấu hình
 
 # Biến toàn cục để lưu thông tin ngân hàng và số tài khoản
 selected_bank = ""
@@ -25,7 +25,7 @@ def update_and_export():
 
     # Ghi thông tin vào file config.py
     try:
-        with open("d:\\CODE\\VSCode\\AutoBank\\config.py", "w") as config_file:
+        with open("d:\\CODE\\VSCode\\AutoBank\\CAGBank\\config.py", "w") as config_file:
             config_file.write(f'selected_bank = "{selected_bank}"\n')
             config_file.write(f'account_number = "{account_number}"\n')
         messagebox.showinfo("Thành công", f"Đã cập nhật:\nNgân hàng: {selected_bank}\nSố tài khoản: {account_number}")
